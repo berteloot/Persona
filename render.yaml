@@ -6,10 +6,10 @@ services:
     startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.11.11
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false
       - key: RESET_WEBHOOK_URL
-        value: https://hook.us1.make.com/83ajhyeoyersjhxnndz9f2rijxkiqhr5 
+        sync: false 
