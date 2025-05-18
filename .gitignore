@@ -43,4 +43,10 @@ ENV/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Render environment variables
+PYTHON_VERSION=3.9.0
+SECRET_KEY=(Render will generate this)
+OPENAI_API_KEY=your_openai_api_key
+RESET_WEBHOOK_URL=https://hook.us1.make.com/83ajhyeoyersjhxnndz9f2rijxkiqhr5 
