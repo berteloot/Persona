@@ -16,6 +16,7 @@ from collections import defaultdict
 import logging
 from math import ceil
 from sqlalchemy import text
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -275,25 +276,46 @@ def suggest_personas(department_groups, client):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-def send_reset_email(user):
-    if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
-        flash('Email configuration is not set up. Please contact the administrator.', 'error')
+def send_reset_webhook(user):
+    """Send password reset webhook to Make.com."""
+    webhook_url = os.getenv('RESET_WEBHOOK_URL')
+    if not webhook_url:
+        flash('Webhook configuration is not set up. Please contact the administrator.', 'error')
         return False
     
     token = user.generate_reset_token()
     reset_url = url_for('reset_password', token=token, _external=True)
-    msg = Message('Password Reset Request',
-                  recipients=[user.email])
-    msg.body = f'''To reset your password, visit the following link:
-{reset_url}
-
-If you did not make this request then simply ignore this email.
-'''
+    
+    # Format payload for Make.com
+    payload = {
+        'event': 'password_reset_request',
+        'user': {
+            'email': user.email,
+            'created_at': user.created_at.isoformat()
+        },
+        'reset': {
+            'url': reset_url,
+            'expires_at': (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+            'requested_at': datetime.utcnow().isoformat()
+        }
+    }
+    
     try:
-        mail.send(msg)
-        return True
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            headers={'Content-Type': 'application/json'}
+        )
+        if response.status_code == 200:
+            logger.info(f"Password reset webhook sent successfully for user {user.email}")
+            return True
+        else:
+            logger.error(f"Webhook failed with status code: {response.status_code}")
+            flash('Failed to process password reset. Please try again later.', 'error')
+            return False
     except Exception as e:
-        flash('Failed to send email. Please try again later.', 'error')
+        logger.error(f"Webhook error: {str(e)}")
+        flash('Failed to process password reset. Please try again later.', 'error')
         return False
 
 @app.route('/')
@@ -358,8 +380,8 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         
         if user:
-            if send_reset_email(user):
-                flash('Password reset instructions have been sent to your email.', 'info')
+            if send_reset_webhook(user):
+                flash('Password reset instructions have been sent.', 'info')
             return redirect(url_for('login'))
         
         flash('Email not found.', 'error')

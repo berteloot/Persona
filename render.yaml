@@ -11,9 +11,5 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: MAIL_DEFAULT_SENDER
-        sync: false 
+      - key: RESET_WEBHOOK_URL
+        value: https://hook.us1.make.com/83ajhyeoyersjhxnndz9f2rijxkiqhr5 
